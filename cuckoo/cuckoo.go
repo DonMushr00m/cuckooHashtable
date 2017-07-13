@@ -157,7 +157,7 @@ func (c *CuckooTable) shrink() {
 	c.reorganize()
 }
 
-func (c *CuckooTable) reorganize(){
+func (c *CuckooTable) reorganize() {
 	tempTab := &CuckooTable{}
 	*tempTab = *c
 	c.resetSeed()

@@ -1,17 +1,17 @@
 package cuckoo
 
 import (
-	"runtime"
-	"math/rand"
-	"testing"
 	"fmt"
+	"math/rand"
+	"runtime"
+	"testing"
 )
 
 var nOfItems = 1 << 15
 
 var (
-	keys   []uint32
-	values []uint32
+	keys      []uint32
+	values    []uint32
 	keyValMap map[uint32]uint32
 )
 
@@ -47,7 +47,7 @@ func init() {
 	mapBytes = after - before
 }
 
-func TestInsertAndSearch(t *testing.T){
+func TestInsertAndSearch(t *testing.T) {
 	c := NewCuckoo()
 
 	for key, value := range keyValMap {
@@ -63,7 +63,7 @@ func TestInsertAndSearch(t *testing.T){
 	}
 }
 
-func TestDelete(t *testing.T){
+func TestDelete(t *testing.T) {
 	c := NewCuckoo()
 
 	for i := 0; i < 2000; i++ {
@@ -93,12 +93,11 @@ func TestMemory(t *testing.T) {
 	}
 
 	after := readAlloc()
-	cBytes := after-before
-
+	cBytes := after - before
 
 	fmt.Print("MEMTEST")
 	t.Log("Built-in map mem usage (MiB):", float64(mapBytes)/float64(1<<20))
-	t.Log("Cuckoo hash mem usage (MiB):", float64(cBytes) / float64(1<<20))
+	t.Log("Cuckoo hash mem usage (MiB):", float64(cBytes)/float64(1<<20))
 	t.Log("Cuckoo hash LoadFactor:", c.LoadFactor())
 }
 
@@ -106,12 +105,12 @@ func BenchmarkCuckooTable_Insert(b *testing.B) {
 	cBench = *NewCuckoo()
 	b.ResetTimer()
 
-	for i := 0; i<b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		cBench.Insert(keys[i%nOfItems], values[i%nOfItems])
 	}
 }
 
-func BenchmarkCuckooTable_LookUp(b *testing.B){
+func BenchmarkCuckooTable_LookUp(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -138,15 +137,15 @@ func BenchmarkMapInsert(b *testing.B) {
 	}
 }
 
-func BenchmarkMapSearch(b *testing.B){
+func BenchmarkMapSearch(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_,_ = mBench[keys[i%nOfItems]]
+		_, _ = mBench[keys[i%nOfItems]]
 	}
 }
 
-func BenchmarkMapDelete(b *testing.B){
+func BenchmarkMapDelete(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {

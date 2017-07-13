@@ -1,12 +1,12 @@
 package murmur3
 
 import (
+	"encoding/binary"
+	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
-	"fmt"
-	"os"
-	"encoding/binary"
 )
 
 var r uint32 = 0
@@ -31,7 +31,7 @@ func TestReference(t *testing.T) {
 	}
 }
 
-func getSeed() uint32{
+func getSeed() uint32 {
 	s := make([]byte, 4)
 	_, err := rand.Read(s)
 	if err != nil {
