@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-var r uint32 = 0
-
 var data = []struct {
 	hash uint32
 	val  uint32
