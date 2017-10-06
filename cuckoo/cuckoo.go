@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file implements a cuckoo hash table using two different hashes of the
+// key to find an appropriate place for the element to be inserted.
+// The maximum table size is 2^16 elements.
+
 package cuckoo
 
 import (
@@ -30,19 +34,21 @@ const (
 	maxLoadFact = 0.5
 )
 
+// The key has to be uint32. But one can adjust the value to whatever type one wants.
 type entry struct {
 	key   uint32
 	value uint32
 }
 
 type CuckooTable struct {
-	entries  []*entry
-	seed     uint32
-	idxBytes uint32
-	nEntries uint32
-	nRehashs uint32
+	entries   []*entry
+	seed      uint32
+	idxBytes  uint32
+	nEntries  uint32
+	nRehashes uint32
 }
 
+// resetSeed() resets the current seed. Used during a rehash of the table.
 func (c *CuckooTable) resetSeed() {
 	s := make([]byte, 4)
 	_, err := rand.Read(s)
@@ -65,6 +71,9 @@ func NewCuckoo() *CuckooTable {
 	return c
 }
 
+// getHashedKeys() generates the two hashed keys. Important to note is that
+// only one hash is generated. This hash is then split up into the two
+// hashed key values used for inserting/finding an object.
 func (c *CuckooTable) getHashedKeys(key uint32) (uint32, uint32) {
 	hash := murmur3.Murmur_32(key, c.seed)
 	h1 := hash >> (32 - c.idxBytes)
@@ -72,6 +81,7 @@ func (c *CuckooTable) getHashedKeys(key uint32) (uint32, uint32) {
 	return h1, h2
 }
 
+// LookUp() looks an element up in the table.
 func (c *CuckooTable) LookUp(key uint32) (uint32, bool) {
 	h1, h2 := c.getHashedKeys(key)
 	if entry := c.entries[h1]; entry != nil && entry.key == key {
@@ -85,6 +95,7 @@ func (c *CuckooTable) LookUp(key uint32) (uint32, bool) {
 	return 0, false
 }
 
+// Insert() inserts an element at the appropriate position in the table.
 func (c *CuckooTable) Insert(key uint32, value uint32) bool {
 	if _, exists := c.LookUp(key); exists {
 		return false
@@ -96,6 +107,8 @@ func (c *CuckooTable) Insert(key uint32, value uint32) bool {
 	index := h1
 	tLen := 1 << c.idxBytes
 
+	// reorder the elements in the table until all elements found a place,
+	// or tLen reordering steps have been done (to avoid an infinite loop).
 	for count := 0; count < tLen; count++ {
 		oldEntry := c.entries[index]
 		c.entries[index] = newEntry
@@ -116,7 +129,9 @@ func (c *CuckooTable) Insert(key uint32, value uint32) bool {
 		newEntry = oldEntry
 	}
 
-	if c.nRehashs < 3 {
+	// If no stable table configuration can be found, first try to rehash the table
+	// if that does not help, grow the table.
+	if c.nRehashes < 3 {
 		c.rehash()
 	} else {
 		c.grow()
@@ -125,6 +140,7 @@ func (c *CuckooTable) Insert(key uint32, value uint32) bool {
 	return c.Insert(newEntry.key, newEntry.value)
 }
 
+// Delete() deletes an element.
 func (c *CuckooTable) Delete(key uint32) {
 	h1, h2 := c.getHashedKeys(key)
 	if entry := c.entries[h1]; entry != nil && entry.key == key {
@@ -137,6 +153,7 @@ func (c *CuckooTable) Delete(key uint32) {
 		c.nEntries -= 1
 	}
 
+	// If the load factor of the table is too low, shrink the table.
 	if c.LoadFactor() < maxLoadFact/2 {
 		c.shrink()
 	}
@@ -145,14 +162,14 @@ func (c *CuckooTable) Delete(key uint32) {
 
 func (c *CuckooTable) rehash() {
 	c.nEntries = 0
-	c.nRehashs += 1
+	c.nRehashes += 1
 	c.reorganize()
 }
 
 func (c *CuckooTable) grow() {
 	c.idxBytes += 1
 	c.nEntries = 0
-	c.nRehashs = 0
+	c.nRehashes = 0
 
 	if c.idxBytes > maxLen {
 		panic("Too many elements")
@@ -167,7 +184,7 @@ func (c *CuckooTable) shrink() {
 	}
 	c.idxBytes -= 1
 	c.nEntries = 0
-	c.nRehashs = 0
+	c.nRehashes = 0
 
 	c.reorganize()
 }

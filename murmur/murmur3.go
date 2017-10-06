@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Implementation of the MurmurHash3 optimized to handle only uint32 integers.
+// A documentation about MurmurHash3 can be found at
+// https://github.com/aappleby/smhasher/wiki/MurmurHash3
+
 package murmur3
 
 func Murmur_32(key uint32, seed uint32) uint32 {
